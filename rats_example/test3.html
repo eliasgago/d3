@@ -3,35 +3,87 @@
   <title>A D3 map</title>
   <script src='https://d3js.org/d3.v4.min.js'></script>
   <script src='neighborhoods.js'></script>
+  <script src="rodents.js"></script>
+  <script src="ratcount.js"></script>
 </head>
 <body>
   <script>
-var width = 700,
-    height = 580;
 
-var svg = d3.select('body')
-  .append('svg')
-  .attr('width', width)
-  .attr('height', height);
+    var width = 700,
+        height = 580;
 
-var g = svg.append('g');
+    var svg = d3.select('body')
+      .append('svg')
+      .attr('width', width)
+      .attr('height', height);
 
-var albersProjection = d3.geoAlbers()
-  .scale(190000)
-  .rotate([71.057, 0])
-  .center([0, 42.313])
-  .translate([width/2, height/2]);
+    var g = svg.append('g');
 
-var geoPath = d3.geoPath()
-    .projection(albersProjection);
+    var albersProjection = d3.geoAlbers()
+      .scale(190000)
+      .rotate([71.057, 0])
+      .center([0, 42.313])
+      .translate([width/2, height/2]);
 
-g.selectAll('path')
-  .data(neighborhoods_json.features)
-  .enter()
-  .append('path')
-  .attr('fill', '#ccc')
-  .attr('d', geoPath);
+    var geoPath = d3.geoPath()
+        .projection(albersProjection);
 
+    g.selectAll('path')
+      .data(neighborhoods_json.features)
+      .enter()
+      .append('path')
+      .attr('fill-opacity', (d) => {
+        return (d.properties.density / 100) + 0.1;
+      })
+      .attr('d', geoPath);
+
+    var rodents = svg.append('g');
+
+    rodents.selectAll('path')
+      .data(rodents_json.features)
+      .enter()
+      .append('path')
+      .attr('fill', '#900')
+      .attr('stroke', '#999')
+      .attr('d', geoPath);
+       
+    var ratcount = svg.append('g');
+
+    ratcount.selectAll('path')
+      .data(ratcount_json.features)
+      .enter()
+      .append('svg:circle')
+      .attr( "cx", (d) => {
+        return albersProjection( d.geometry.coordinates )[0];
+      })
+      .attr( "cy", (d) => {
+        return albersProjection( d.geometry.coordinates )[1];
+      })
+      .attr('fill', '#336699')
+      .attr('fill-opacity', 0.7)
+      .attr('r', (d) => {
+        return d.properties.ratcount / 2;
+      })
+      .on( "click", function(){
+        d3.select(this)
+          .attr("opacity",1)
+          .transition()
+          .duration( 1000 )
+          .attr( "cx", width * Math.round( Math.random() ) )
+          .attr( "cy", height * Math.round( Math.random() ) )
+          .attr( "opacity", 0 )
+          .on("end",function(){
+            d3.select(this)
+              .attr("opacity",1)
+              .attr( "cx", (d) => {
+                return albersProjection( d.geometry.coordinates )[0];
+              })
+              .attr( "cy", (d) => {
+                return albersProjection( d.geometry.coordinates )[1];
+              })
+          })
+      });
+            
   </script>
 </body>
 </html>
