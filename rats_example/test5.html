@@ -1,0 +1,37 @@
+<html>
+<head>
+  <title>A D3 map</title>
+  <script src='https://d3js.org/d3.v4.min.js'></script>
+  <script src='galicia_concellos.js'></script>
+</head>
+<body>
+  <script>
+var width = 900,
+    height = 900;
+
+var svg = d3.select('body')
+  .append('svg')
+  .attr('width', width)
+  .attr('height', height);
+
+var g = svg.append('g');
+
+var albersProjection = d3.geoAlbers()
+  .scale(19000)
+  .rotate([11.057, 0])
+  .center([3, 42.613])
+  .translate([width/2, height/2]);
+
+var geoPath = d3.geoPath()
+    .projection(albersProjection);
+
+g.selectAll('path')
+  .data(galicia_json.features)
+  .enter()
+  .append('path')
+  .attr('fill', '#777')
+  .attr('d', geoPath);
+
+  </script>
+</body>
+</html>
