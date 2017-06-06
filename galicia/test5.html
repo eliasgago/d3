@@ -37,15 +37,15 @@ g.selectAll('path')
         console.log(d);
   });
 
-  var points = svg.append('g');
-  
-  points.selectAll('path')
-    .data(galicia_points_json.features)
-    .enter()
-    .append('path')
-    .attr('fill', '#000')
-    .attr('stroke', '#000')
-    .attr('d', geoPath);
+var points = svg.append('g');
+
+points.selectAll('path')
+  .data(galicia_points_json.features)
+  .enter()
+  .append('path')
+  .attr('fill', '#000')
+  .attr('stroke', '#000')
+  .attr('d', geoPath);
 
   </script>
 </body>
