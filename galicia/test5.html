@@ -27,13 +27,15 @@ var geoPath = d3.geoPath()
     .projection(albersProjection)
     .pointRadius(1);
 
-
 g.selectAll('path')
   .data(galicia_json.features)
   .enter()
   .append('path')
   .attr('fill', '#ccc')
-  .attr('d', geoPath);
+  .attr('d', geoPath)
+  .on( "click", function(d){
+        console.log(d);
+  });
 
   var points = svg.append('g');
   
