@@ -2,8 +2,6 @@
 <head>
   <title>A D3 map</title>
   <script src='https://d3js.org/d3.v4.min.js'></script>
-  <script src='galicia_concellos.js'></script>
-  <script src='galicia_concellos_points.js'></script>
 </head>
 <body>
   <script>
@@ -17,54 +15,66 @@ var svg = d3.select('body')
 
 var g = svg.append('g');
 
-var albersProjection = d3.geoAlbers()
-  .scale(19000)
-  .rotate([11.057, 0])
-  .center([3, 42.613])
-  .translate([width/2, height/2]);
+var projection = d3.geoMercator()
+    .scale(18000)
+    .center([-8, 42.8])
+    .translate([width / 2, height / 2]);
 
 var geoPath = d3.geoPath()
-    .projection(albersProjection)
-    .pointRadius(1);
+    .projection(projection)
+    .pointRadius(2);
 
-g.selectAll('path')
-  .data(galicia_json.features)
-  .enter()
-  .append('path')
-  .attr('fill', (d)=> {
-    if(d.properties.population == '-'){
-      return '#fff';
-    }
-    if(populationBetween(d.properties.population, null, 2000)) {
-      return '#ccc';
-    } else if(populationBetween(d.properties.population, 2000, 5000)) {
-      return '#bbb';
-    } else if(populationBetween(d.properties.population, 5000, 10000)) {
-      return '#aaa';
-    } else if(populationBetween(d.properties.population, 10000, 20000)) {
-      return '#888';
-    } else if(populationBetween(d.properties.population, 20000, 50000)) {
-      return '#777';
-    } else if(populationBetween(d.properties.population, 50000, 100000)) {
-      return '#666';
-    } else if(populationBetween(d.properties.population, 100000, null)) {
-      return '#555';
-    }
-  })
-  .attr('d', geoPath)
-  .on( "click", function(d){
-        console.log(d);
-  });
+d3.json("galicia_concellos_areas.json", function(error, data) {
+  g.selectAll('path')
+    .data(data.features)
+    .enter()
+    .append('path')
+    .attr('fill', (d)=> {
+      if(d.properties.population == '-'){
+        return '#fff';
+      }
+      if(populationBetween(d.properties.population, null, 2000)) {
+        return '#ccc';
+      } else if(populationBetween(d.properties.population, 2000, 5000)) {
+        return '#bbb';
+      } else if(populationBetween(d.properties.population, 5000, 10000)) {
+        return '#aaa';
+      } else if(populationBetween(d.properties.population, 10000, 20000)) {
+        return '#888';
+      } else if(populationBetween(d.properties.population, 20000, 50000)) {
+        return '#777';
+      } else if(populationBetween(d.properties.population, 50000, 100000)) {
+        return '#666';
+      } else if(populationBetween(d.properties.population, 100000, null)) {
+        return '#555';
+      }
+    })
+    .attr('d', geoPath)
+    .on( "click", function(d){
+          console.log(d);
+    });
+});
+
 
 var points = svg.append('g');
 
-points.selectAll('path')
-  .data(galicia_points_json.features)
+d3.json("galicia_concellos_points.json", function(error, data) {
+  points.selectAll('path')
+  .data(data.features)
   .enter()
   .append('path')
   .attr('fill', '#000')
   .attr('stroke', '#000')
   .attr('d', geoPath);
+});
+
+/*points.selectAll('path')
+  .data(galicia_points_json.features)
+  .enter()
+  .append('path')
+  .attr('fill', '#000')
+  .attr('stroke', '#000')
+  .attr('d', geoPath);*/
 
 function populationBetween(population, min, max){
   if(min == null)
