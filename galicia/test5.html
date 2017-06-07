@@ -2,6 +2,19 @@
 <head>
   <title>A D3 map</title>
   <script src='https://d3js.org/d3.v4.min.js'></script>
+  <script src='tooltip.js'></script>
+  <style type="text/css">
+    .tooltip{ background-color:rgba(68,136,187,0.5);;
+          margin: 10px;
+          height: 50px;
+          width: 150px;
+          padding-left: 10px; 
+          padding-top: 10px;
+    -webkit-border-radius:10px;
+    -moz-border-radius:10px;
+    border-radius:10px;
+        }
+  </style>
 </head>
 <body>
   <script>
@@ -51,8 +64,13 @@ d3.json("galicia_concellos_areas.json", function(error, data) {
     })
     .attr('d', geoPath)
     .on( "click", function(d){
-          console.log(d);
-    });
+      console.log(d);
+    })
+    .call(d3.helper.tooltip(
+        function(d, i){
+          return "<b>"+d.properties.name + "</b><br/>habitantes: "+d.properties.population;
+        }
+        ));
 });
 
 
