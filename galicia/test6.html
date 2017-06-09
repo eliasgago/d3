@@ -23,7 +23,6 @@
 
     .bubble {
       fill-opacity: .5;
-      fill: #336699;
       stroke: #fff;
       stroke-width: .5px;
     }
@@ -129,16 +128,17 @@ function loadMap() {
 
 function loadData() {
   setTimeout(function() {
-    d3.json("galicia_concellos_points.json", function(error, data) {
+    d3.json("galicia_concellos_nacementos_defuncions.json", function(error, data) {
       g.selectAll('.point')
       .data(data.features)
       .enter()
       .append('circle')
+      .attr("fill", "#336699")
       .attr("class", "bubble")
       .transition()
-      .duration(500)
+      .duration(1000)
       .delay(function(d, i) { 
-        return d.properties.population / 100; 
+        return 1000; 
       })
       .attr( "cx", (d) => {
         return projection( d.geometry.coordinates )[0];
@@ -148,6 +148,52 @@ function loadData() {
       })
       .attr('r', (d) => {
         return radius(d.properties.population);
+      })
+      .on("end",function(){
+        d3.select(this)
+          .transition()
+          .duration(1000)
+          .delay(function(d, i){
+            var saldo = d.properties.nacementos - d.properties.defuncions;
+            if(saldo < 0){
+              return 2000;
+            }else{
+              return 3000;
+            }
+          })
+          .attr('r', (d) => {
+            var saldo = d.properties.nacementos - d.properties.defuncions;
+            var new_population = Number(d.properties.population) + Number(saldo);
+            if(saldo < 0){
+              return radius(new_population / 2);
+            }else{
+              return radius(new_population * 2);
+            }
+          })
+          .on("start",function(){
+            d3.select(this)
+              .attr("fill", (d) => {
+                var saldo = d.properties.nacementos - d.properties.defuncions;
+                console.log();
+                if(saldo < 0) {
+                  return '#f00';
+                }else{
+                  return '#0f0';
+                }
+              })
+          })
+          .on("end",function(){
+            d3.select(this)
+              .transition()
+              .duration(1000)
+              .delay(2000)
+              .attr( "cx", width * Math.round( Math.random() ) )
+              .attr( "cy", height * Math.round( Math.random() ) )
+              .on("end",function(){
+                d3.select(this)
+                  .attr('opacity', 0);
+              });
+          });
       });
     });
   }, 2000);
@@ -200,7 +246,7 @@ function createDataBox(d) {
       .attr('fill', '#336699')
 
     var dataBoxText = dataBoxGroup.append('text')
-      .text('Habitantes: ' + d.properties.population)
+      .text('Nacementos: ' + d.properties.nacementos)
       .attr('x', 590)
       .attr('y', 100)
       .attr('fill', '#336699')
