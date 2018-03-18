@@ -1,0 +1,381 @@
+<html>
+<head>
+  <title>A D3 map</title>
+  <script src='https://d3js.org/d3.v4.min.js'></script>
+  <script src='tooltip.js'></script>
+  <style type="text/css">
+    body {
+      font-family: Helvetica;
+    }
+
+    .background {
+      fill: #fff;
+    }
+
+    .tooltip{ 
+          background-color:rgba(33,66,99,0.5);
+          border: 1px solid #fff;
+          margin: 10px;
+          height: 50px;
+          width: 150px;
+          padding-left: 10px; 
+          padding-top: 10px;
+          -webkit-border-radius:10px;
+          -moz-border-radius:10px;
+          border-radius:10px;
+        }
+
+    .bubble {
+      fill-opacity: .5;
+      stroke: #fff;
+      stroke-width: .5px;
+    }
+
+    .active {
+      fill: orange;
+    }
+
+    .data-box-rect {
+      stroke: #fff;
+      stroke-width: 5;
+      fill: orange;
+      opacity: 0.5;
+    }
+
+    .data-box .title {
+      text-transform: uppercase;
+      font-weight: bold;
+      font-size: 20px;
+    }
+
+    .info {
+      position: absolute;
+      left: 60px;
+      top: 60px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .legend div {
+      width: 100px;
+      height: 20px;
+      white-space: nowrap;
+      font-size: 11px;
+      color:rgba(0, 0, 0, 0.5);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .title {
+      color: #41b693;
+      margin-left: 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      width: 150px;
+      text-align: center;
+    }
+
+    .title h1 {
+      font-size: 30px;
+      margin-bottom: 0px;
+    }
+
+    .title h3 {
+      font-size: 15px;
+    }
+
+  </style>
+</head>
+<body>
+  <div class="info">
+    <div class="legend">
+      <div>- 1500</div>
+      <div>1500 - 3000</div>
+      <div>3000 - 4500</div>
+      <div>4500 - 6000</div>
+      <div>6000 - 7500</div>
+      <div>7500 - 9000</div>
+      <div>+ 10000</div>
+    </div>
+    <div class="title">
+      <h1>A Galicia das Vacas</h1>
+      <h3>N&uacute;mero de Vacas por Concello</h3>
+    </div>
+  </div>
+
+  <script>
+var width = 900,
+    height = 900,
+    active = d3.select(null);
+
+var projection = d3.geoMercator()
+    .scale(18000)
+    .center([-8, 42.8])
+    .translate([width / 2, height / 2]);
+
+var zoom = d3.zoom()
+    // no longer in d3 v4 - zoom initialises with zoomIdentity, so it's already at origin
+    // .translate([0, 0]) 
+    // .scale(1) 
+    .scaleExtent([1, 8])
+    .on("zoom", zoomed);
+
+var path = d3.geoPath()
+    .projection(projection)
+    .pointRadius(2);
+
+var svg = d3.select("body").append("svg")
+    .attr("width", width)
+    .attr("height", height)
+    .on("click", stopped, true);
+
+svg.append("rect")
+    .attr("class", "background")
+    .attr("width", width)
+    .attr("height", height)
+    .on("click", reset);
+
+var g = svg.append('g');
+
+var points = svg.append('g');
+
+var radius = d3.scaleSqrt()
+  .domain([0, 3000])
+  .range([1, 40]);
+
+var color = d3.scaleOrdinal()
+  .domain([0, 300000])
+  .range(['#ccc', '#333']);
+
+svg.call(zoom); // delete this line to disable free zooming;
+
+
+var colorPopulationPalette = ['#ddf4ed', '#c2ebdf', '#a7e2d0', '#8cd8c2', '#71ceb3', '#57c4a4', '#41b693'];
+
+function loadMap() {
+  d3.json("galicia_poblacion_vacas.json", function(error, data) {
+    g.selectAll('.area')
+      .data(data.features)
+      .enter()
+      .append('path')
+      .attr('fill', (d) => {
+        return fillPopulation(d.properties.num_vacas);
+      })
+      .attr('d', path)
+      .on("click", clicked);
+
+  });
+
+  d3.selectAll('.legend div')  //here's how you get all the nodes
+    .each(function(d, i) {
+      console.log(i);
+      d3.select(this).style('background-color', colorPopulationPalette[i])
+    });
+}
+function fillPopulation(population) {
+  if(populationBetween(population, null, 1500)) {
+    return colorPopulationPalette[0];
+  } else if(populationBetween(population, 1500, 3000)) {
+    return colorPopulationPalette[1];
+  } else if(populationBetween(population, 3000, 4500)) {
+    return colorPopulationPalette[2];
+  } else if(populationBetween(population, 4500, 6000)) {
+    return colorPopulationPalette[3];
+  } else if(populationBetween(population, 6000, 7500)) {
+    return colorPopulationPalette[4];
+  } else if(populationBetween(population, 7500, 9000)) {
+    return colorPopulationPalette[5];
+  } else if(populationBetween(population, 9000, null)) {
+    return colorPopulationPalette[6];
+  }
+}
+
+function loadData() {
+  setTimeout(function() {
+    d3.json("galicia_concellos_nacementos_defuncions.json", function(error, data) {
+      g.selectAll('.point')
+      .data(data.features)
+      .enter()
+      .append('circle')
+      .attr("fill", "#336699")
+      .attr("class", "bubble")
+      .transition()
+      .duration(1000)
+      .delay(function(d, i) { 
+        return 1000; 
+      })
+      .attr( "cx", (d) => {
+        return projection( d.geometry.coordinates )[0];
+      })
+      .attr( "cy", (d) => {
+        return projection( d.geometry.coordinates )[1];
+      })
+      .attr('r', (d) => {
+        return radius(d.properties.population);
+      })
+      .on("end",function(){
+        d3.select(this)
+          .transition()
+          .duration(1000)
+          .delay(function(d, i){
+            var saldo = d.properties.nacementos - d.properties.defuncions;
+            if(saldo < 0){
+              return 2000;
+            }else{
+              return 3000;
+            }
+          })
+          .attr('r', (d) => {
+            var saldo = d.properties.nacementos - d.properties.defuncions;
+            var new_population = Number(d.properties.population) + Number(saldo);
+            if(saldo < 0){
+              return radius(new_population / 2);
+            }else{
+              return radius(new_population * 2);
+            }
+          })
+          .on("start",function(){
+            d3.select(this)
+              .attr("fill", (d) => {
+                var saldo = d.properties.nacementos - d.properties.defuncions;
+                console.log();
+                if(saldo < 0) {
+                  return '#f00';
+                }else{
+                  return '#0f0';
+                }
+              })
+          })
+          .on("end",function(){
+            d3.select(this)
+              .transition()
+              .duration(1000)
+              .delay(2000)
+              .attr( "cx", width * Math.round( Math.random() ) )
+              .attr( "cy", height * Math.round( Math.random() ) )
+              .on("end",function(){
+                d3.select(this)
+                  .attr('opacity', 0);
+              });
+          });
+      });
+    });
+  }, 2000);
+}
+
+function clicked(d) {
+  if (active.node() === this) return reset();
+  active.classed("active", false);
+  active = d3.select(this).classed("active", true);
+
+  var bounds = path.bounds(d),
+      dx = bounds[1][0] - bounds[0][0],
+      dy = bounds[1][1] - bounds[0][1],
+      x = (bounds[0][0] + bounds[1][0]) / 2,
+      y = (bounds[0][1] + bounds[1][1]) / 2,
+      scale = Math.max(1, Math.min(8, 0.9 / Math.max(dx / width, dy / height))),
+      translate = [width / 2 - scale * x, height / 2 - scale * y];
+
+  svg.transition()
+      .duration(750)
+      // .call(zoom.translate(translate).scale(scale).event); // not in d3 v4
+      .call( zoom.transform, d3.zoomIdentity.translate(translate[0],translate[1]).scale(scale) ); // updated for d3 v4
+
+
+  createDataBox(d);
+
+}
+
+var dataBoxGroup = null;
+
+function createDataBox(d) {
+  if(!dataBoxGroup){
+    dataBoxGroup = svg.append("g")
+      .attr("class", "data-box");
+
+    var dataBoxRect = dataBoxGroup.append("rect")
+      .attr("class", "data-box-rect")
+      .attr("width", 300)
+      .attr("height", 200)
+      .attr("rx", 20)
+      .attr("ry", 20)
+      .attr("x", 550)
+      .attr("y", 40);
+
+    var dataBoxText = dataBoxGroup.append('text')
+      .attr('class', 'title')
+      .text(d.properties.name)
+      .attr('x', 570)
+      .attr('y', 70)
+      .attr('fill', '#336699')
+
+    var dataBoxText = dataBoxGroup.append('text')
+      .text('Habitantes: ' + d.properties.population)
+      .attr('x', 590)
+      .attr('y', 100)
+      .attr('fill', '#336699')
+
+    var dataBoxVacas = dataBoxGroup.append('text')
+      .text('Vacas: ' + d.properties.num_vacas)
+      .attr('x', 590)
+      .attr('y', 130)
+      .attr('fill', '#336699')
+  }
+  
+}
+
+function reset() {
+  svg.select('.data-box').remove();
+  dataBoxGroup = null;
+  active.classed("active", false);
+  active = d3.select(null);
+
+  svg.transition()
+      .duration(750)
+      // .call( zoom.transform, d3.zoomIdentity.translate(0, 0).scale(1) ); // not in d3 v4
+      .call( zoom.transform, d3.zoomIdentity ); // updated for d3 v4
+}
+
+function zoomed() {
+  g.style("stroke-width", 1.5 / d3.event.transform.k + "px");
+  // g.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")"); // not in d3 v4
+  g.attr("transform", d3.event.transform); // updated for d3 v4
+}
+
+// If the drag behavior prevents the default click,
+// also stop propagation so we don’t click-to-zoom.
+function stopped() {
+  if (d3.event.defaultPrevented) d3.event.stopPropagation();
+}
+
+/*points.selectAll('path')
+  .data(galicia_points_json.features)
+  .enter()
+  .append('path')
+  .attr('fill', '#000')
+  .attr('stroke', '#000')
+  .attr('d', geoPath);*/
+
+function populationBetween(population, min, max){
+  if(min == null)
+    return population < max;
+  if(max == null)
+    return population > min;
+  return population >= min && population < max;
+}
+
+d3.queue()
+  .defer(loadMap)
+  // .defer(loadData)
+  .await(function(error) {
+    if (error) throw error;
+    console.log("Goodbye!");
+  });
+
+  </script>
+</body>
+</html>
